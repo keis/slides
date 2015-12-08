@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mesos</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body {
+        font-family: 'Ubuntu Mono';
+      }
+
+      h1, h2, h3 {
+        font-family: 'Ubuntu Mono';
+        font-weight: normal;
+      }
+
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+
+      .remark-slide-content {
+        background-color: black;
+        color: white;
+        background-size: cover;
+        font-size: 2.0em;
+      }
+
+      .remark-slide > .para-center p {
+        text-align: center;
+      }
+
+      .remark-slide-content.wide {
+        padding: 0px;
+      }
+
+      .remark-slide-content.inverted {
+        background-color: white;
+        color: black;
+      }
+
+      a {
+        font-size: 0.8em;
+      }
+
+      a, a:visited { color: red }
+
+
+      .remark-slide-content .hljs,
+      .remark-slide-content .hljs-subst { color: white; }
+
+      .remark-slide-content code.remark-code {
+        overflow-x: hidden;
+        background: black;
+      }
+
+      pre { margin-bottom: 0px; margin-top: 0px; }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Building a testing platform with mesos
+
+???
+
+Share some of the findings of our research into running mesos.
+
+Initially focused on building a platform for doing builds and running tests
+
+---
+
+# Problems with VMs
+
+Maintaining them
+
+Don't start fast enough
+
+Cloud provider APIs are all different
+
+Resource utilisation
+
+
+???
+
+maintaining vms even though container
+
+start
+
+---
+class: center, middle
+
+# What is Apache Mesos?
+
+![mesos](assets/mesos.png)
+
+
+???
+
+Before we get into it
+
+---
+
+An open source cluster manager
+???
+apache foundation
+
+Keeps track of the resources in your cluster
+
+Combining several resource to a single resource pool.
+
+Like one big operating system
+--
+ that does resource isolation
+???
+Keeps resources isolated using containers
+
+either using docker or a builtin containeriser
+
+Isolated view of the fs, network etc
+
+Makes sure you get the cpu and memory you asked for
+--
+ and sharing for your distributed system
+???
+
+and resource sharing
+
+You provide tasks to run and mesos schedules them to run somewhere on your cluster
+
+A mix of containers running on the same host
+
+
+---
+
+# Cluster management
+
+Allocate the resources you need
+
+Free resources when done
+
+???
+
+cluster management is key concept
+
+Allocate resources with smaller granularity. on cpu shares, memory in MB, workers
+
+Number of task or containers rather than number of VMs
+
+No need to spend a lot of time managing VMs or scripting your infrastructure by
+separating these responsibilities. And having a platform to build on.
+
+Avoiding static allocation get better utilisation
+
+---
+
+# Why Mesos?
+
+???
+Mesos is not the only thing out there, kubernetes, swarm, nomad. So why mesos?
+
+--
+Established
+???
+Mesos has been around for a while, top level apache, being in production for years.
+
+--
+
+
+Used in production at big scale
+
+???
+
+Used by some big players
+* twitter, full
+* apple, siri
+* netflix
+* ebay
+
+--
+
+Flexible
+???
+Very flexible and supports all kinds of work flows. tasks and web services
+
+
+---
+
+# Container native
+
+Scaling unit is a container
+
+Free from the machines
+
+Not limited to docker
+
+???
+
+As a developer, you don't deal with machines. even virtual
+---
+
+class: center middle
+# Basic terminology
+
+---
+
+# Task
+
+One process, short lived or long running, a job
+
+???
+
+job, process, task
+
+no vm, containerised process
+
+start and end
+
+---
+
+# Frameworks
+
+A two tiered scheduler
+
+Mesos for the low level plumbing
+
+One or more frameworks on top
+
+Work flow implementation
+
+
+???
+
+# How does it work
+
+* a two tiered system, mesos and so called frameworks
+* mesos low level, the scheduler
+* The frameworks on top is what you as a user would interface with
+* Multiple frameworks available and you can write your own
+
+---
+
+![architecture](assets/arch2.png)
+
+???
+
+* Highly available master, stand by, replicated data
+* mesos master tracks resources and *offers* them to the frameworks
+    - scheduler
+* framework decide what if anything to run on those resources. complex or simple logic.
+    - redundant instances on different hosts
+    - launch task based on various triggers
+* mesos hands task over to slave and reports back status of the process
+* Zookeeper for coordination, for the layers to find each other
+* Each task is containerised
+
+
+---
+
+# Short lived jobs
+
+Task oriented
+
+e.g Chronos, Jenkins
+
+scheduling, re-try, workers
+
+???
+
+Chronos, cron job like
+
+Jenkins, starting worker agents based on queue
+
+Spikes in work load, needs to scale quickly
+
+No work, no tasks running on the cluster
+
+
+---
+
+# Long running processes
+
+As a platform for services
+
+e.g Marathon, Aurora, Kubernetes
+
+restart, health check, rolling upgrade
+
+???
+
+Different frameworks for different use cases
+
+Web service, redundant instances
+
+Marathon by mesosphere
+
+Kubernetes by google
+
+Aurora by twitter, Apache Software Foundation
+
+Specialised for running kafka, mysql etc
+
+Keeping a desired number of instances
+
+restarting if dead, health check, rolling upgrades
+
+
+---
+
+# Mesos - Recap
+
+???
+
+A quick recap
+
+--
+
+Flexibility from frameworks
+
+???
+
+All kind of use cases and work flows
+
+--
+
+Battle proven core
+
+???
+
+It's used in production to do real things
+
+--
+
+Containers!
+
+???
+
+Containers is at the core
+
+If you can put it in a container you can run it on mesos
+
+
+# questions
+
+---
+
+class: center middle
+# Jenkins at Klarna
+
+---
+
+# Jenkins at Klarna
+~30 teams, ~1k commits / day
+
+1 jenkins master and X slaves for each team
+
+VM-Based infrastructure
+
+Each push triggers multiple jobs
+
+Already using containers
+
+???
+
+30 teams, 1k commits / day
+
+1 master, x slaves
+
+Slow start so teams try to have VMs always on, so
+
+idle workers and still a backlog when we have a spike
+
+Everytime we push a lot of things happen
+
+Each step of the job is typically consist of running a command in a container
+
+
+---
+
+# Working with VMs
+
+Maintenance
+
+Slow to start [minutes]
+
+Static resource
+
+Already using containers
+
+???
+
+This is where we are at, we're working with VMs
+
+Abstracting the hardware
+
+Maintenance on each team
+
+networking, System updates etc but no cables
+
+full init process
+
+Static in practice, On the scale of hours/day
+
+People don't want to deal with that to much, so they build container images
+
+
+---
+
+# Working with containers
+
+Quick to start [seconds]
+
+Dynamic resource
+
+Already building them
+
+???
+
+Another layer of abstraction, Abstracting the Execution Environment
+
+Feels like instant to start, assuming you have the image
+
+Dynamic resource, dispose when done. On the scale of minutes.
+
+Removes containers after they are done. And we can do garbage collection of images.
+
+Used in development process, run on their laptops
+
+
+---
+
+# Jenkins on mesos
+
+Plugin makes jenkins a mesos framework
+
+Agent launched in container
+
+![mesos-jenkins](assets/mesos-jenkins.png)
+
+???
+
+# One of the things we're looking into
+
+Jenkins becomes a framework, and is talking to the mesos masters
+
+When there is something in the build queue it will try to launch Jenkins agent in a container on a mesos slave
+
+Killed after a short time out, 3 minutes, with no jobs. And resources returned!
+
+Compared to bringing up a new VM on demand it's great. That was about 5-8
+minutes while this is only about ~20 seconds
+
+And even less if the image is already on the host
+
+Better resource utilisation and a team that suddenly needs more executors can
+easily scale up
+
+---
+
+class: center wide
+![jenkins](assets/jenkins.png)
+
+
+???
+
+Adding job to queue
+
+Agent being started but not up yet
+
+Agent starts running job
+
+up top we see the task, running the agent, on the mesos master ui
+
+one executor per agent, because scaling to more agent is super easy
+
+---
+
+class: center middle
+# But we can do better
+
+#What if we run each task directly on mesos
+
+---
+
+Launching tasks directly on mesos
+
+![eremetic](assets/eremetic.png)
+
+Runs One-Off tasks with no upfront configuration
+
+???
+
+Developed at Klarna as part of our mesos Proof of concept
+
+Simple api to launch tasks, launch task in a single step with a POST
+
+And check the status of task later
+
+Written in go, and surprisingly easy to do
+
+Like lambda
+
+
+---
+
+![eremetic-post](assets/eremetic-post.png)
+
+???
+
+The smallest possible request
+
+the command to run, a simple hello world
+
+the name of the docker image to run in
+
+resources needed to run this task. cpu and mem
+
+It's also possible to add volume mounts and environment variables
+
+response is the mesos task id, which can be used throughout the mesos stack.
+It's also added to the environment of the container
+
+
+---
+
+![eremetic-post](assets/eremetic-get.png)
+
+???
+
+At some later time we can check in on the task
+
+It reminds us what we asked to run along with some other details
+
+timestamps of the states it goes through
+
+staging includes pulling the image of the container
+
+running timestamp is from when it actually started executing
+
+and finally the terminating status, which could also be failed if we get a bad exit code
+
+
+---
+
+And we have the logs to prove it
+
+![eremetic-post](assets/eremetic-kibana.png)
+
+???
+
+it is kibana
+
+logspout with a slightly adapted logstash adapter
+adding the task id the json blob so we can search for it
+
+Which is the reason we want to add it to environment config
+
+
+---
+
+class: para-center
+# Hello World at scale
+
+![lgtm](assets/got.gif)
+
+
+???
+
+# Hello world is not the most interesting
+
+But we've have done something actually useful
+
+---
+
+# System test
+
+Jenkins jobs to run group of rspec tests
+
+Currently ~10 in parallel
+???
+
+Together with the system test team
+
+tests written in rspec, that test the REST apis
+
+Replacing a whole lot of Jenkins Job Builder Magic that is used to create jobs for supporting parallel runs
+
+static division, adding more tests means adding more jobs when some groups become to big. Handcrafted jobs.
+
+About 10 parallel jobs
+
+---
+
+Finding list of scenarios to run
+
+```ruby
+json_file = Tempfile.new('spec_files.json')
+system("rspec --dry-run -f j spec -o #{json_file.path}")
+dry_run_output = JSON.parse(File.read json_file.path)
+system("rm -fr #{json_file.path}")
+
+# Get all unique spec files
+spec_list = dry_run_output['examples'].map { |h| h['file_path'] }.uniq
+
+File.open("#{env}-#{country}.csv", 'w') do |f|
+  files = ''
+  spec_list.each { |file| files &lt;&lt; (file.sub './spec/scenarios/', '') + ',' }
+  f.write(files)
+end
+
+```
+
+???
+
+Does a rspec dry run to find all scenarios to run
+
+and builds this list as artifact
+
+The set of scenarios to run varies with target market etc
+
+---
+
+Launching scenarios on mesos
+
+```ruby
+run_scenarios = File.foreach("#{env}-#{country}.csv").first.split(',')
+run_scenarios.each do |file|
+  folder, filename = file.split('/')
+  body = {
+    docker_image: "hub.int.klarna.net/systest-ruby-el7:#{docker_vsn}",
+    command: "/bin/bash -l -c \"bundle exec rake t['PROD','#{folder}',"
+      "'#{filename}','#{env}','#{country}']\"",
+    task_cpus: 0.1,
+    task_mem: 200.0
+  }
+```
+???
+Loops through the list of scenarios to run from the previous step and construct a payload describing the task
+
+* docker image
+* the rake command to run
+* cpus and mem
+
+--
+
+```ruby
+  run_scenario = conn.post do |req|
+    req.url '/task'
+    req.headers['Content-Type'] = 'application/json'
+    req.body = body.to_json
+  end
+
+  scenarios["#{folder}: #{filename}"] = run_scenario.env
+    .response_headers['location']
+end
+```
+???
+ .. and POST a task to eremetic
+
+30 separate tasks depending on target country
+
+---
+
+```ruby
+60.times do
+  sleep 10
+  scenarios.each do |scenario, location|
+    execution_result = conn.get "#{location}"
+    ...
+    scenarios.delete(scenario) if
+      %{'TASK_FINISHED'}.include? task_status['status']
+    scenarios.delete(scenario) if
+      %{'TASK_FAILED', 'TASK_ERROR', 'TASK_LOST', 'TASK_KILLED'}
+        .include? task_status['status']
+  end
+  break if scenarios.empty?
+end
+
+```
+
+???
+
+And then we poll the scenarios until we get FINISHED or FAILED
+
+Total run is duration of longest task. No need to balance jobs
+
+---
+
+# Using mesos for CD
+
+???
+
+Don't deal with VM
+
+That's IT!
+
+--
+
+Scales out quickly when you need it
+
+--
+
+Cleans up when you're done
+
+--
+
+Option for custom solution if needed
+
+--
+
+Abstracting the infrastructure
+
+--
+
+Cloud agnostic
+
+--
+
+Efficient resource utilisation
+
+---
+
+class: center
+
+![lolwut](assets/lolwut.jpg)
+
+Questions?
+
+
+---
+
+# kthx
+
+https://github.com/alde/eremetic
+
+https://github.com/jenkinsci/mesos-plugin
+
+https://github.com/keis/logspout-logstash
+
+
+    </textarea>
+    <script src="remark.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
